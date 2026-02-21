@@ -5,8 +5,9 @@ import { MessageSquare, Send, Trash2, Reply, ChevronDown, ChevronRight } from "l
 import { formatDistanceToNow } from "date-fns";
 
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { MentionsInput, Mention } from "react-mentions";
 import { Separator } from "@/components/ui/separator";
 import { getDiscussions, createDiscussion, deleteDiscussion } from "@/actions/discussions";
 import { AlertConfirmation } from "@/components/ui/alert-confirmation";
@@ -30,7 +31,66 @@ interface ProjectDiscussionProps {
     projectId: string;
     currentUserId: string;
     isParticipant: boolean;
+    projectMembers: { id: string; name: string }[];
 }
+
+const renderContentWithMentions = (text: string) => {
+    const regex = /@\[([^\]]+)\]\(([^)]+)\)/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+        if (match.index > lastIndex) {
+            parts.push(text.substring(lastIndex, match.index));
+        }
+        parts.push(
+            <span key={match.index} className="text-primary font-semibold bg-primary/10 px-1 rounded">
+                @{match[1]}
+            </span>
+        );
+        lastIndex = regex.lastIndex;
+    }
+
+    if (lastIndex < text.length) {
+        parts.push(text.substring(lastIndex));
+    }
+
+    return <>{parts}</>;
+};
+
+const mentionsInputStyle = {
+    control: {
+        backgroundColor: "transparent",
+        fontSize: 14,
+        fontWeight: "normal",
+    },
+    input: {
+        margin: 0,
+        padding: "8px 12px",
+        overflow: "auto",
+        height: 60,
+        border: "1px solid hsl(var(--input))",
+        borderRadius: "0.375rem",
+        outline: "none",
+    },
+    suggestions: {
+        list: {
+            backgroundColor: "hsl(var(--popover))",
+            border: "1px solid hsl(var(--border))",
+            fontSize: 14,
+            borderRadius: "0.375rem",
+            boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+        },
+        item: {
+            padding: "8px 12px",
+            borderBottom: "1px solid hsl(var(--border))",
+            "&focused": {
+                backgroundColor: "hsl(var(--accent))",
+            },
+        },
+    },
+};
 
 const DiscussionReply = ({
     item,
@@ -45,6 +105,7 @@ const DiscussionReply = ({
     onDelete: (id: string) => void;
     isPending: boolean;
     currentUserId: string;
+    projectMembers: { id: string; name: string }[];
     depth?: number;
 }) => {
     const [showReplyInput, setShowReplyInput] = useState(false);
@@ -76,7 +137,7 @@ const DiscussionReply = ({
                                 {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
                             </span>
                         </div>
-                        <p className="text-sm mt-1.5 whitespace-pre-wrap leading-relaxed">{item.content}</p>
+                        <p className="text-sm mt-1.5 whitespace-pre-wrap leading-relaxed">{renderContentWithMentions(item.content)}</p>
                         <div className="flex items-center gap-1 mt-3">
                             {depth < 2 && (
                                 <Button
@@ -105,18 +166,28 @@ const DiscussionReply = ({
 
                         {showReplyInput && (
                             <div className="mt-3 flex gap-2">
-                                <Textarea
-                                    placeholder="Write a reply..."
-                                    value={replyContent}
-                                    onChange={(e) => setReplyContent(e.target.value)}
-                                    className="min-h-[60px] text-sm"
-                                    disabled={isPending}
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                                            handleReply();
-                                        }
-                                    }}
-                                />
+                                <div className="flex-1">
+                                    <MentionsInput
+                                        value={replyContent}
+                                        onChange={(e) => setReplyContent(e.target.value)}
+                                        style={mentionsInputStyle}
+                                        placeholder="Write a reply... (use @ to mention)"
+                                        className="text-sm"
+                                        disabled={isPending}
+                                        onKeyDown={(e: any) => {
+                                            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                                                handleReply();
+                                            }
+                                        }}
+                                        a11ySuggestionsListLabel={"Suggested mentions"}
+                                    >
+                                        <Mention
+                                            trigger="@"
+                                            data={projectMembers.map(m => ({ id: m.id, display: m.name }))}
+                                            style={{ backgroundColor: "var(--primary)", opacity: 0.2 }}
+                                        />
+                                    </MentionsInput>
+                                </div>
                                 <Button
                                     size="sm"
                                     onClick={handleReply}
@@ -148,6 +219,7 @@ const DiscussionReply = ({
                             onDelete={onDelete}
                             isPending={isPending}
                             currentUserId={currentUserId}
+                            projectMembers={projectMembers}
                             depth={depth + 1}
                         />
                     ))}
@@ -157,7 +229,7 @@ const DiscussionReply = ({
     );
 };
 
-export const ProjectDiscussion = ({ projectId, currentUserId, isParticipant }: ProjectDiscussionProps) => {
+export const ProjectDiscussion = ({ projectId, currentUserId, isParticipant, projectMembers }: ProjectDiscussionProps) => {
     const [discussions, setDiscussions] = useState<DiscussionItem[]>([]);
     const [newContent, setNewContent] = useState("");
     const [isPending, startTransition] = useTransition();
@@ -215,18 +287,26 @@ export const ProjectDiscussion = ({ projectId, currentUserId, isParticipant }: P
                         <span className="text-sm font-semibold">Y</span>
                     </div>
                     <div className="flex-1 space-y-2">
-                        <Textarea
-                            placeholder="Start a discussion..."
+                        <MentionsInput
                             value={newContent}
                             onChange={(e) => setNewContent(e.target.value)}
-                            className="min-h-[80px]"
+                            style={{ ...mentionsInputStyle, input: { ...mentionsInputStyle.input, height: 80 } }}
+                            placeholder="Start a discussion... (use @ to mention)"
+                            className="text-sm"
                             disabled={isPending}
-                            onKeyDown={(e) => {
+                            onKeyDown={(e: any) => {
                                 if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                                     handleCreate();
                                 }
                             }}
-                        />
+                            a11ySuggestionsListLabel={"Suggested mentions"}
+                        >
+                            <Mention
+                                trigger="@"
+                                data={projectMembers.map(m => ({ id: m.id, display: m.name }))}
+                                style={{ backgroundColor: "var(--primary)", opacity: 0.2 }}
+                            />
+                        </MentionsInput>
                         <div className="flex justify-between items-center">
                             <span className="text-xs text-muted-foreground">
                                 Press Ctrl+Enter to post
@@ -260,6 +340,7 @@ export const ProjectDiscussion = ({ projectId, currentUserId, isParticipant }: P
                             onDelete={handleDeleteClick}
                             isPending={isPending}
                             currentUserId={currentUserId}
+                            projectMembers={projectMembers}
                         />
                         {index < discussions.length - 1 && <Separator />}
                     </div>

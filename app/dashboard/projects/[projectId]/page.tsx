@@ -64,6 +64,10 @@ const ProjectIdPage = async ({ params }: ProjectIdPageProps) => {
                     projectId={project.id}
                     currentUserId={currentUserId}
                     isParticipant={isParticipant}
+                    projectMembers={[
+                        { id: project.owner.id, name: project.owner.name || project.owner.email || "Owner" },
+                        ...project.members.map(m => ({ id: m.id, name: m.name || m.email || "Unknown" }))
+                    ]}
                 />
             </div>
         </div>
