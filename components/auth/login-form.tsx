@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/form-error";
 import { FormSuccess } from "@/components/form-success";
 import { login } from "@/actions/login";
+import { Loader2 } from "lucide-react";
 
 export const LoginForm = () => {
     const [error, setError] = useState<string | undefined>("");
@@ -45,8 +46,6 @@ export const LoginForm = () => {
                         form.reset();
                         setError(data.error);
                     }
-                    // If successful, NextAuth handles redirect, or we could set success message
-                    // Usually redirect happens automatically
                 })
                 .catch((err) => {
                     console.error("Login client error:", err);
@@ -57,15 +56,14 @@ export const LoginForm = () => {
 
     return (
         <CardWrapper
-            headerLabel="Welcome back"
-            backButtonLabel="Don't have an account?"
-            backButtonHref="/auth/register"
-
+            headerLabel="Enter your credentials to continue"
+            backButtonLabel=""
+            backButtonHref=""
         >
             <Form {...form}>
                 <form
                     onSubmit={form.handleSubmit(onSubmit)}
-                    className="space-y-6"
+                    className="space-y-5"
                 >
                     <div className="space-y-4">
                         <FormField
@@ -73,13 +71,14 @@ export const LoginForm = () => {
                             name="email"
                             render={({ field }) => (
                                 <FormItem id="email-field">
-                                    <FormLabel>Email</FormLabel>
+                                    <FormLabel className="text-foreground font-medium">Email address</FormLabel>
                                     <FormControl>
                                         <Input
                                             {...field}
                                             disabled={isPending}
-                                            placeholder="john.doe@example.com"
+                                            placeholder="you@company.com"
                                             type="email"
+                                            className="h-11"
                                         />
                                     </FormControl>
                                     <FormMessage />
@@ -91,13 +90,14 @@ export const LoginForm = () => {
                             name="password"
                             render={({ field }) => (
                                 <FormItem id="password-field">
-                                    <FormLabel>Password</FormLabel>
+                                    <FormLabel className="text-foreground font-medium">Password</FormLabel>
                                     <FormControl>
                                         <Input
                                             {...field}
                                             disabled={isPending}
-                                            placeholder="******"
+                                            placeholder="••••••••"
                                             type="password"
+                                            className="h-11"
                                         />
                                     </FormControl>
                                     <FormMessage />
@@ -110,9 +110,16 @@ export const LoginForm = () => {
                     <Button
                         disabled={isPending}
                         type="submit"
-                        className="w-full"
+                        className="w-full h-11 text-base font-medium"
                     >
-                        Login
+                        {isPending ? (
+                            <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Signing in...
+                            </>
+                        ) : (
+                            "Sign in"
+                        )}
                     </Button>
                 </form>
             </Form>

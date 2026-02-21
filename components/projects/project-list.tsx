@@ -29,8 +29,9 @@ interface ProjectListProps {
     currentUserId?: string;
 }
 
-export const ProjectList = ({ projects, currentUserRole, currentUserId }: ProjectListProps) => {
+export const ProjectList = ({ projects: initialProjects, currentUserRole, currentUserId }: ProjectListProps) => {
     const [open, setOpen] = useState(false);
+    const [projects, setProjects] = useState<Project[]>(initialProjects);
 
     return (
         <div className="space-y-4">
@@ -48,7 +49,15 @@ export const ProjectList = ({ projects, currentUserRole, currentUserId }: Projec
                             <DialogHeader>
                                 <DialogTitle>Create New Project</DialogTitle>
                             </DialogHeader>
-                            <CreateProjectForm onSuccess={() => setOpen(false)} currentUserId={currentUserId} />
+                            <CreateProjectForm
+                                onSuccess={(newProject) => {
+                                    if (newProject) {
+                                        setProjects(prev => [newProject, ...prev]);
+                                    }
+                                    setOpen(false);
+                                }}
+                                currentUserId={currentUserId}
+                            />
                         </DialogContent>
                     </Dialog>
                 )}

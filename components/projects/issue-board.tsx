@@ -1,7 +1,7 @@
 "use client";
 
 import { Issue, User, BoardColumn } from "@prisma/client";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Calendar } from "lucide-react";
 import { useState, useTransition } from "react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { AlertConfirmation } from "@/components/ui/alert-confirmation";
@@ -33,11 +33,12 @@ interface ColumnWithIssues extends BoardColumn {
 interface IssueBoardProps {
     projectId: string;
     columns: ColumnWithIssues[];
-    currentUserRole?: "ADMIN" | "MEMBER";
     isProjectOwner?: boolean;
+    onIssueCreate?: (issue: IssueWithAssignee & { columnName: string }) => void;
+    onIssueMove?: (issueId: string, newColumnName: string) => void;
 }
 
-export const IssueBoard = ({ projectId, columns: initialColumns, currentUserRole, isProjectOwner }: IssueBoardProps) => {
+export const IssueBoard = ({ projectId, columns: initialColumns, isProjectOwner, onIssueCreate, onIssueMove }: IssueBoardProps) => {
     const [columns, setColumns] = useState<ColumnWithIssues[]>(
         initialColumns.map(col => ({
             ...col,
@@ -91,6 +92,11 @@ export const IssueBoard = ({ projectId, columns: initialColumns, currentUserRole
         });
 
         setColumns(newColumns);
+
+        // Notify parent if issue changed column (for timeline sync)
+        if (source.droppableId !== destination.droppableId) {
+            onIssueMove?.(draggableId, destCol.name);
+        }
 
         // Prepare bulk update payload (only affected columns)
         const affectedIssues = [
@@ -146,7 +152,7 @@ export const IssueBoard = ({ projectId, columns: initialColumns, currentUserRole
             <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold tracking-tight">Board</h2>
                 <div className="flex gap-2">
-                    {currentUserRole === "ADMIN" && (
+                    {isProjectOwner && (
                         <>
                             <Dialog open={open} onOpenChange={setOpen}>
                                 <DialogTrigger asChild>
@@ -166,6 +172,7 @@ export const IssueBoard = ({ projectId, columns: initialColumns, currentUserRole
                                             setColumns(prev => prev.map(col => {
                                                 const isTarget = col.id === issue.columnId || (!issue.columnId && col.order === 0);
                                                 if (isTarget) {
+                                                    onIssueCreate?.({ ...issue, assignee: null, columnName: col.name });
                                                     return {
                                                         ...col,
                                                         issues: [...col.issues, { ...issue, assignee: null }],
@@ -220,6 +227,7 @@ export const IssueBoard = ({ projectId, columns: initialColumns, currentUserRole
                 issue={selectedIssue}
                 open={detailOpen}
                 onOpenChange={setDetailOpen}
+                isProjectOwner={isProjectOwner}
                 onDelete={(issueId) => {
                     setColumns(prev => prev.map(col => ({
                         ...col,
@@ -239,7 +247,7 @@ export const IssueBoard = ({ projectId, columns: initialColumns, currentUserRole
                                         {column.name}
                                         <span className="ml-2 text-xs">({column.issues.length})</span>
                                     </h3>
-                                    {column.issues.length === 0 && (currentUserRole === "ADMIN" || isProjectOwner) && (
+                                    {isProjectOwner && column.issues.length === 0 && (
                                         <Button
                                             variant="ghost"
                                             size="sm"
@@ -289,6 +297,30 @@ export const IssueBoard = ({ projectId, columns: initialColumns, currentUserRole
                                                                     {issue.type}
                                                                 </span>
                                                             </div>
+
+                                                            {issue.dueDate && (() => {
+                                                                const today = new Date();
+                                                                today.setHours(0, 0, 0, 0);
+                                                                const due = new Date(issue.dueDate);
+                                                                due.setHours(0, 0, 0, 0);
+                                                                const diffDays = Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                                                                const isOverdue = diffDays < 0;
+                                                                const isToday = diffDays === 0;
+                                                                return (
+                                                                    <div className={`flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded w-fit ${isOverdue ? "bg-destructive/10 text-destructive" :
+                                                                        isToday ? "bg-orange-100 text-orange-600 dark:bg-orange-950 dark:text-orange-400" :
+                                                                            "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
+                                                                        }`}>
+                                                                        <Calendar className="h-2.5 w-2.5" />
+                                                                        {isOverdue
+                                                                            ? `${Math.abs(diffDays)}d overdue`
+                                                                            : isToday
+                                                                                ? "Due today"
+                                                                                : `${diffDays}d left`
+                                                                        }
+                                                                    </div>
+                                                                );
+                                                            })()}
                                                         </Card>
                                                     )}
                                                 </Draggable>

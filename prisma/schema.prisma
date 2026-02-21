@@ -150,6 +150,8 @@ model Issue {
   
   // For ordering in Kanban board
   order       Float    @default(0)
+
+  dueDate     DateTime?
 }
 
 model Sprint {

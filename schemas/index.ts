@@ -37,9 +37,7 @@ export const ProjectSchema = z.object({
     name: z.string().min(1, {
         message: "Project name is required",
     }),
-    key: z.string().min(1, {
-        message: "Project key is required",
-    }),
+    key: z.string().optional(),
     description: z.string().optional(),
 });
 
@@ -56,4 +54,5 @@ export const IssueSchema = z.object({
     priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).optional(),
     type: z.enum(["TASK", "BUG", "STORY", "EPIC"]).optional(),
     status: z.enum(["TODO", "IN_PROGRESS", "DONE"]).optional(),
+    dueDate: z.string().optional(),
 });

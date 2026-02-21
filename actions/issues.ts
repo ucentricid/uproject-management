@@ -19,7 +19,7 @@ export const createIssue = async (values: z.infer<typeof IssueSchema> & { column
         return { error: "Invalid fields!" };
     }
 
-    const { title, description, projectId, priority, type, status } = validatedFields.data;
+    const { title, description, projectId, priority, type, status, dueDate } = validatedFields.data;
     const columnId = values.columnId;
 
     // Verify project exists
@@ -64,6 +64,7 @@ export const createIssue = async (values: z.infer<typeof IssueSchema> & { column
             status: status || "TODO",
             order: newOrder,
             columnId: targetColumnId,
+            dueDate: dueDate ? new Date(dueDate) : null,
         },
     });
 

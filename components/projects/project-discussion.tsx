@@ -114,6 +114,7 @@ const DiscussionReply = ({
     onDelete,
     isPending,
     currentUserId,
+    projectMembers,
     depth = 0,
 }: {
     item: DiscussionItem;
@@ -201,7 +202,7 @@ const DiscussionReply = ({
                                             trigger="@"
                                             markup="@[__display__](__id__)"
                                             displayTransform={(id, display) => `@${display}`}
-                                            data={projectMembers.map(m => ({ id: String(m.id), display: String(m.name || m.id) }))}
+                                            data={projectMembers.filter(m => m.id !== currentUserId).map(m => ({ id: String(m.id), display: String(m.name || m.id) }))}
                                             renderSuggestion={renderSuggestion}
                                             style={{ backgroundColor: "var(--primary)", opacity: 0.2, borderRadius: "2px" }}
                                         />
@@ -292,7 +293,7 @@ export const ProjectDiscussion = ({ projectId, currentUserId, isParticipant, pro
     };
 
     return (
-        <Card className="p-6 mb-8">
+        <Card className="p-6">
             <div className="flex items-center gap-2 mb-6">
                 <MessageSquare className="h-5 w-5" />
                 <h3 className="text-lg font-semibold">Discussion</h3>
@@ -324,7 +325,7 @@ export const ProjectDiscussion = ({ projectId, currentUserId, isParticipant, pro
                                 trigger="@"
                                 markup="@[__display__](__id__)"
                                 displayTransform={(id, display) => `@${display}`}
-                                data={projectMembers.map(m => ({ id: String(m.id), display: String(m.name || m.id) }))}
+                                data={projectMembers.filter(m => m.id !== currentUserId).map(m => ({ id: String(m.id), display: String(m.name || m.id) }))}
                                 renderSuggestion={renderSuggestion}
                                 style={{ backgroundColor: "var(--primary)", opacity: 0.2, borderRadius: "2px" }}
                             />

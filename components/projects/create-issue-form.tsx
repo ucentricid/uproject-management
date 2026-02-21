@@ -47,6 +47,7 @@ export const CreateIssueForm = ({ projectId, onSuccess }: CreateIssueFormProps) 
             priority: "MEDIUM",
             type: "TASK",
             status: "TODO",
+            dueDate: "",
         },
     });
 
@@ -164,6 +165,23 @@ export const CreateIssueForm = ({ projectId, onSuccess }: CreateIssueFormProps) 
                             )}
                         />
                     </div>
+                    <FormField
+                        control={form.control}
+                        name="dueDate"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Due Date <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                                <FormControl>
+                                    <Input
+                                        {...field}
+                                        disabled={isPending}
+                                        type="date"
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                 </div>
                 <FormError message={error} />
                 <FormSuccess message={success} />

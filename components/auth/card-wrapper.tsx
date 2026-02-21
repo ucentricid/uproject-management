@@ -1,10 +1,8 @@
 "use client";
 
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Header } from "@/components/auth/header";
-
 import { BackButton } from "@/components/auth/back-button";
-
 
 interface CardWrapperProps {
     children: React.ReactNode;
@@ -19,27 +17,23 @@ export const CardWrapper = ({
     headerLabel,
     backButtonLabel,
     backButtonHref,
-    showSocial
 }: CardWrapperProps) => {
     return (
-        <Card className="w-[400px] shadow-md">
-            <CardHeader>
+        <div className="w-full max-w-md space-y-1">
+            <CardHeader className="px-0 pb-2">
                 <Header label={headerLabel} />
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-0">
                 {children}
             </CardContent>
-            {showSocial && (
-                <CardFooter>
-                    <Social />
+            {backButtonLabel && (
+                <CardFooter className="px-0 flex justify-center">
+                    <BackButton
+                        label={backButtonLabel}
+                        href={backButtonHref}
+                    />
                 </CardFooter>
             )}
-            <CardFooter>
-                <BackButton
-                    label={backButtonLabel}
-                    href={backButtonHref}
-                />
-            </CardFooter>
-        </Card>
+        </div>
     );
 };

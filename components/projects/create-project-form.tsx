@@ -22,8 +22,10 @@ import { getUsers } from "@/actions/users";
 import { Badge } from "@/components/ui/badge";
 import { X, Check } from "lucide-react";
 
+import { Project } from "@prisma/client";
+
 interface CreateProjectFormProps {
-    onSuccess?: () => void;
+    onSuccess?: (project?: Project) => void;
     currentUserId?: string;
 }
 
@@ -56,7 +58,6 @@ export const CreateProjectForm = ({ onSuccess, currentUserId }: CreateProjectFor
         resolver: zodResolver(ProjectSchema),
         defaultValues: {
             name: "",
-            key: "",
             description: "",
         },
     });
@@ -86,9 +87,8 @@ export const CreateProjectForm = ({ onSuccess, currentUserId }: CreateProjectFor
                         setError(data.error);
                     }
                     if (data?.success) {
-                        setSuccess(data.success);
                         if (onSuccess) {
-                            onSuccess();
+                            onSuccess(data.project);
                         }
                     }
                 });
@@ -116,23 +116,7 @@ export const CreateProjectForm = ({ onSuccess, currentUserId }: CreateProjectFor
                             </FormItem>
                         )}
                     />
-                    <FormField
-                        control={form.control}
-                        name="key"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Key</FormLabel>
-                                <FormControl>
-                                    <Input
-                                        {...field}
-                                        disabled={isPending}
-                                        placeholder="MAP"
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
+
                     <FormField
                         control={form.control}
                         name="description"
@@ -186,6 +170,7 @@ export const CreateProjectForm = ({ onSuccess, currentUserId }: CreateProjectFor
                                     setShowDropdown(true);
                                 }}
                                 onFocus={() => setShowDropdown(true)}
+                                onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
                                 disabled={isPending}
                             />
 
@@ -200,6 +185,7 @@ export const CreateProjectForm = ({ onSuccess, currentUserId }: CreateProjectFor
                                                 onClick={() => {
                                                     toggleUser(user.id);
                                                     setUserSearch("");
+                                                    setShowDropdown(false);
                                                 }}
                                                 className="w-full text-left px-3 py-2 text-sm hover:bg-accent flex items-center justify-between"
                                             >

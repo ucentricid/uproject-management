@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db";
 import { auth } from "@/auth";
+import { sendMail } from "@/lib/mail";
 
 // Check if user is project owner or member
 const isProjectParticipant = async (projectId: string, userId: string) => {
@@ -93,6 +94,85 @@ export const createDiscussion = async (projectId: string, content: string, paren
             },
         },
     });
+
+    try {
+        const project = await db.project.findUnique({
+            where: { id: projectId },
+            select: { name: true },
+        });
+
+        // Format content to remove IDs from mentions: @[Name](Id) -> @Name
+        const displayContent = content.replace(/@\[([^\]]+)\]\([^)]+\)/g, '@$1');
+
+        // 1. Notify Parent User (if it's a reply)
+        let parentUserId: string | null = null;
+        if (parentId) {
+            const parentDiscussion = await db.discussion.findUnique({
+                where: { id: parentId },
+                select: { userId: true, user: { select: { email: true, name: true } } }
+            });
+
+            if (parentDiscussion && parentDiscussion.userId !== session.user.id && parentDiscussion.user?.email) {
+                parentUserId = parentDiscussion.userId;
+                await sendMail({
+                    to: parentDiscussion.user.email,
+                    subject: `New reply on your comment in ${project?.name || 'Project'}`,
+                    html: `
+                        <p>Hi ${parentDiscussion.user.name || 'there'},</p>
+                        <p><strong>${discussion.user.name || 'Someone'}</strong> replied to your comment:</p>
+                        <blockquote style="border-left: 4px solid #ccc; padding-left: 10px; color: #555;">
+                            ${displayContent}
+                        </blockquote>
+                        <p>Log in to your account to view the full discussion.</p>
+                    `
+                });
+            }
+        }
+
+        // 2. Notify Mentioned Users
+        // Extract mentions using regex: @[Name](UserId)
+        const mentionRegex = /@\[([^\]]+)\]\(([^)]+)\)/g;
+        let match;
+        const mentionedUserIds = new Set<string>();
+
+        while ((match = mentionRegex.exec(content)) !== null) {
+            mentionedUserIds.add(match[2]);
+        }
+
+        // Remove the creator and the parent user (if already notified) from mentions
+        mentionedUserIds.delete(session.user.id);
+        if (parentUserId) {
+            mentionedUserIds.delete(parentUserId);
+        }
+
+        if (mentionedUserIds.size > 0) {
+            const mentionedUsers = await db.user.findMany({
+                where: { id: { in: Array.from(mentionedUserIds) } },
+                select: { email: true, name: true },
+            });
+
+            const emailPromises = mentionedUsers
+                .filter(u => u.email)
+                .map(user =>
+                    sendMail({
+                        to: user.email!,
+                        subject: `You were mentioned in ${project?.name || 'Project'}`,
+                        html: `
+                            <p>Hi ${user.name || 'there'},</p>
+                            <p><strong>${discussion.user.name || 'Someone'}</strong> mentioned you in a discussion:</p>
+                            <blockquote style="border-left: 4px solid #ccc; padding-left: 10px; color: #555;">
+                                ${displayContent}
+                            </blockquote>
+                            <p>Log in to your account to view the full discussion.</p>
+                        `
+                    })
+                );
+
+            await Promise.allSettled(emailPromises);
+        }
+    } catch (error) {
+        console.error("Failed to send discussion notifications", error);
+    }
 
     return { success: "Comment posted!", discussion };
 };

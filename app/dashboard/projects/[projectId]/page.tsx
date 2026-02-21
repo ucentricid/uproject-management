@@ -1,8 +1,8 @@
 import { getProject } from "@/actions/projects";
-import { IssueBoard } from "@/components/projects/issue-board";
 import { ProjectDiscussion } from "@/components/projects/project-discussion";
 import { ProjectMembers } from "@/components/projects/project-members";
-import { EditProjectDialog } from "@/components/projects/edit-project-dialog";
+import { ProjectTabs } from "@/components/projects/project-tabs";
+import { ProjectHeaderActions } from "@/components/projects/project-header-actions";
 import { auth } from "@/auth";
 import { notFound } from "next/navigation";
 
@@ -24,22 +24,31 @@ const ProjectIdPage = async ({ params }: ProjectIdPageProps) => {
     }
 
     const currentUserId = session?.user?.id || "";
-    const currentUserRole = session?.user?.role;
     const isParticipant =
         project.ownerId === currentUserId ||
         project.members.some(m => m.id === currentUserId);
 
+    const hasIssues = project.columns.some(col => col.issues.length > 0);
+    const hasDiscussions = project.discussions.length > 0;
+    const canDelete = !hasIssues && !hasDiscussions;
+
+    // Flatten all issues with column name for timeline
+    const initialTimelineIssues = project.columns.flatMap(col =>
+        col.issues.map(issue => ({ ...issue, columnName: col.name }))
+    );
+
     return (
-        <div className="flex-1 flex flex-col p-8 pt-6 h-[calc(100vh-4rem)] overflow-hidden">
-            <div className="flex items-center justify-between mb-4 shrink-0">
+        <div className="flex flex-col p-8 pt-6 gap-4">
+            <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <h2 className="text-3xl font-bold tracking-tight">{project.name}</h2>
                     {project.ownerId === currentUserId && (
-                        <EditProjectDialog project={project} />
+                        <ProjectHeaderActions project={project} canDelete={canDelete} />
                     )}
                 </div>
             </div>
-            <div className="flex-1 overflow-y-auto space-y-6">
+
+            <div className="flex flex-col gap-4">
                 {/* Members Section */}
                 <ProjectMembers
                     projectId={project.id}
@@ -49,15 +58,13 @@ const ProjectIdPage = async ({ params }: ProjectIdPageProps) => {
                     ownerName={project.owner.name || project.owner.email || "Owner"}
                 />
 
-                {/* Board */}
-                <div className="min-h-[500px]">
-                    <IssueBoard
-                        projectId={project.id}
-                        columns={project.columns}
-                        currentUserRole={currentUserRole}
-                        isProjectOwner={project.ownerId === currentUserId}
-                    />
-                </div>
+                {/* Board / Timeline Tabs — shared client state */}
+                <ProjectTabs
+                    projectId={project.id}
+                    columns={project.columns}
+                    isProjectOwner={project.ownerId === currentUserId}
+                    initialTimelineIssues={initialTimelineIssues}
+                />
 
                 {/* Discussion */}
                 <ProjectDiscussion

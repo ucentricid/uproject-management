@@ -26,9 +26,10 @@ interface IssueDetailDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onDelete?: (issueId: string) => void;
+    isProjectOwner?: boolean;
 }
 
-export const IssueDetailDialog = ({ issue, open, onOpenChange, onDelete }: IssueDetailDialogProps) => {
+export const IssueDetailDialog = ({ issue, open, onOpenChange, onDelete, isProjectOwner }: IssueDetailDialogProps) => {
     const [isPending, startTransition] = useTransition();
     const [showDeleteAlert, setShowDeleteAlert] = useState(false);
 
@@ -93,17 +94,6 @@ export const IssueDetailDialog = ({ issue, open, onOpenChange, onDelete }: Issue
                             </div>
                         </div>
 
-                        <div>
-                            <h3 className="text-sm font-medium mb-2 text-muted-foreground">Assignee</h3>
-                            <div className="flex items-center gap-2">
-                                <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
-                                    <UserIcon className="h-3 w-3" />
-                                </div>
-                                <span className="text-sm">
-                                    {issue.assignee?.name || "Unassigned"}
-                                </span>
-                            </div>
-                        </div>
 
                         <Separator />
 
@@ -112,24 +102,24 @@ export const IssueDetailDialog = ({ issue, open, onOpenChange, onDelete }: Issue
                                 <Calendar className="h-3 w-3" />
                                 Created {format(new Date(issue.createdAt), "MMM d, yyyy")}
                             </div>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <Tag className="h-3 w-3" />
-                                {issue.id}
-                            </div>
+
                         </div>
 
-                        <Separator />
-
-                        <Button
-                            variant="destructive"
-                            size="sm"
-                            className="w-full"
-                            onClick={handleDeleteClick}
-                            disabled={isPending}
-                        >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            {isPending ? "Deleting..." : "Delete Issue"}
-                        </Button>
+                        {isProjectOwner && (
+                            <>
+                                <Separator />
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    className="w-full"
+                                    onClick={handleDeleteClick}
+                                    disabled={isPending}
+                                >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    {isPending ? "Deleting..." : "Delete Issue"}
+                                </Button>
+                            </>
+                        )}
                     </div>
                 </div>
             </DialogContent>

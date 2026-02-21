@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 const font = Poppins({
     subsets: ["latin"],
-    weight: ["600"],
+    weight: ["700"],
 });
 
 interface HeaderProps {
@@ -13,9 +13,9 @@ interface HeaderProps {
 
 export const Header = ({ label }: HeaderProps) => {
     return (
-        <div className="w-full flex flex-col gap-y-4 items-center justify-center">
-            <h1 className={cn("text-3xl font-semibold", font.className)}>
-                🔐 Auth
+        <div className="w-full flex flex-col gap-y-1 items-start">
+            <h1 className={cn("text-2xl font-bold text-foreground", font.className)}>
+                Sign in to Ucentric
             </h1>
             <p className="text-muted-foreground text-sm">
                 {label}
