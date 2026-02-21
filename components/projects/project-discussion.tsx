@@ -182,6 +182,8 @@ const DiscussionReply = ({
                                     >
                                         <Mention
                                             trigger="@"
+                                            markup="@[__display__](__id__)"
+                                            displayTransform={(id, display) => `@${display}`}
                                             data={projectMembers.map(m => ({ id: String(m.id), display: String(m.name || m.id) }))}
                                             style={{ backgroundColor: "var(--primary)", opacity: 0.2 }}
                                         />
@@ -302,6 +304,8 @@ export const ProjectDiscussion = ({ projectId, currentUserId, isParticipant, pro
                         >
                             <Mention
                                 trigger="@"
+                                markup="@[__display__](__id__)"
+                                displayTransform={(id, display) => `@${display}`}
                                 data={projectMembers.map(m => ({ id: String(m.id), display: String(m.name || m.id) }))}
                                 style={{ backgroundColor: "var(--primary)", opacity: 0.2 }}
                             />
