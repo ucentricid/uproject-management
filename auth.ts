@@ -49,7 +49,6 @@ export const {
         }
     },
     adapter: PrismaAdapter(db),
-    session: { strategy: "jwt" },
     ...authConfig,
     providers: [
         ...authConfig.providers,
@@ -85,6 +84,4 @@ export const {
             }
         }),
     ],
-    trustHost: true,
-    secret: process.env.AUTH_SECRET,
 })

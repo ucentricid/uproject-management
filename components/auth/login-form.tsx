@@ -45,6 +45,9 @@ export const LoginForm = () => {
                     if (data?.error) {
                         form.reset();
                         setError(data.error);
+                    } else if (data?.success) {
+                        setSuccess(data.success);
+                        window.location.assign(data.redirectTo || "/dashboard");
                     }
                 })
                 .catch((error) => {

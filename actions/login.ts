@@ -34,8 +34,19 @@ export const login = async (values: z.infer<typeof LoginSchema>) => {
             }
         }
 
-        // We MUST re-throw the error if it is not an AuthError. Next.js and Auth.js 
-        // rely on throwing a "NEXT_REDIRECT" error to route to the new page.
-        throw error;
+        // If NextAuth successfully signs in, it often immediately throws a Next.js redirect error.
+        // We catch it and suppress it so we can execute the redirect on the client-side safely instead, overcoming any reverse proxy header-stripping.
+        if (
+            (error instanceof Error && error.message === "NEXT_REDIRECT") ||
+            (error && typeof error === 'object' && 'digest' in error && typeof error.digest === 'string' && error.digest.startsWith("NEXT_REDIRECT"))
+        ) {
+            console.log("Suppressed NEXT_REDIRECT. Returning success to client.");
+            return { success: "Logged in!", redirectTo: DEFAULT_LOGIN_REDIRECT };
+        }
+
+        console.error("CRITICAL SIGNIN ERROR:", error);
+        return { error: "System Error: " + (error?.message || "Unknown error") };
     }
+
+    return { success: "Logged in!", redirectTo: DEFAULT_LOGIN_REDIRECT };
 };
