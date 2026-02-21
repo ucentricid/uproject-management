@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   env: {
     AUTH_TRUST_HOST: "true",
+    AUTH_URL: process.env.AUTH_URL || "https://uproject.skiddie.id",
   },
   /* config options here */
   async redirects() {

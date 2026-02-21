@@ -6,7 +6,7 @@ const { auth } = NextAuth(authConfig)
 export default auth((req) => {
     // NextAuth/Auth.js often has issues behind proxies unless trustHost is explicitly handled
     // Or normally, we set AUTH_TRUST_HOST in .env, but setting it explicitly is safer.
-    const isLoggedIn = !!req.auth
+    const isLoggedIn = !!req.auth?.user
     const nextUrl = req.nextUrl
 
     console.log(`[Middleware] Path: ${nextUrl.pathname}, isLoggedIn: ${isLoggedIn}, auth: ${JSON.stringify(req.auth)}`);

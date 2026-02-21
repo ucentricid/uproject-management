@@ -86,4 +86,5 @@ export const {
         }),
     ],
     trustHost: true,
+    secret: process.env.AUTH_SECRET,
 })
