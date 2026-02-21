@@ -85,4 +85,5 @@ export const {
             }
         }),
     ],
+    trustHost: true,
 })
