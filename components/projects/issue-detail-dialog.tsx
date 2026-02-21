@@ -68,8 +68,15 @@ export const IssueDetailDialog = ({ issue, open, onOpenChange, onDelete, isProje
                     <div className="md:col-span-2 space-y-4">
                         <div>
                             <h3 className="text-sm font-medium mb-2">Description</h3>
-                            <div className="text-sm text-muted-foreground whitespace-pre-wrap p-4 bg-muted/30 rounded-md">
-                                {issue.description || "No description provided."}
+                            <div className="text-sm text-muted-foreground p-4 bg-muted/30 rounded-md">
+                                {issue.description ? (
+                                    <div
+                                        className="prose prose-sm dark:prose-invert max-w-none"
+                                        dangerouslySetInnerHTML={{ __html: issue.description }}
+                                    />
+                                ) : (
+                                    "No description provided."
+                                )}
                             </div>
                         </div>
                     </div>

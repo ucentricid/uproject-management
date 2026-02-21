@@ -1,5 +1,9 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import "react-quill-new/dist/quill.snow.css";
+
+const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import * as z from "zod";
 import { useState, useTransition, useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -124,11 +128,15 @@ export const CreateProjectForm = ({ onSuccess, currentUserId }: CreateProjectFor
                             <FormItem>
                                 <FormLabel>Description</FormLabel>
                                 <FormControl>
-                                    <Input
-                                        {...field}
-                                        disabled={isPending}
-                                        placeholder="Project description..."
-                                    />
+                                    <div className="bg-background rounded-md">
+                                        <ReactQuill
+                                            theme="snow"
+                                            value={field.value || ""}
+                                            onChange={field.onChange}
+                                            placeholder="Describe your project goals, timelines, etc..."
+                                            className="h-[150px] mb-12"
+                                        />
+                                    </div>
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>

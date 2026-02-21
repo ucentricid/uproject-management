@@ -75,9 +75,16 @@ export const ProjectList = ({ projects: initialProjects, currentUserRole, curren
                                 <CardDescription>Key: {project.key}</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <p className="text-sm text-muted-foreground line-clamp-2">
-                                    {project.description || "No description provided."}
-                                </p>
+                                {project.description ? (
+                                    <div
+                                        className="text-sm text-muted-foreground line-clamp-2 prose prose-sm dark:prose-invert"
+                                        dangerouslySetInnerHTML={{ __html: project.description }}
+                                    />
+                                ) : (
+                                    <p className="text-sm text-muted-foreground line-clamp-2">
+                                        No description provided.
+                                    </p>
+                                )}
                             </CardContent>
                             <CardFooter>
                                 <p className="text-xs text-muted-foreground">

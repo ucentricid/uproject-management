@@ -1,7 +1,11 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import "react-quill-new/dist/quill.snow.css";
+
+const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import * as z from "zod";
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ProjectSchema } from "@/schemas";
@@ -22,7 +26,6 @@ import {
     FormLabel,
     FormMessage,
 } from "@/components/ui/form";
-import { Textarea } from "@/components/ui/textarea";
 import { updateProject } from "@/actions/projects";
 import { useRouter } from "next/navigation";
 import { Pencil } from "lucide-react";
@@ -43,6 +46,12 @@ export const EditProjectDialog = ({ project }: EditProjectDialogProps) => {
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
 
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
     const form = useForm<z.infer<typeof ProjectSchema>>({
         resolver: zodResolver(ProjectSchema),
         defaultValues: {
@@ -51,6 +60,10 @@ export const EditProjectDialog = ({ project }: EditProjectDialogProps) => {
             description: project.description || "",
         },
     });
+
+    if (!isMounted) {
+        return null;
+    }
 
     const onSubmit = (values: z.infer<typeof ProjectSchema>) => {
         setError("");
@@ -127,11 +140,15 @@ export const EditProjectDialog = ({ project }: EditProjectDialogProps) => {
                                 <FormItem>
                                     <FormLabel>Description</FormLabel>
                                     <FormControl>
-                                        <Textarea
-                                            {...field}
-                                            placeholder="Describe your project..."
-                                            disabled={isPending}
-                                        />
+                                        <div className="bg-background rounded-md" id="edit-project-quill">
+                                            <ReactQuill
+                                                theme="snow"
+                                                value={field.value || ""}
+                                                onChange={field.onChange}
+                                                placeholder="Describe your project..."
+                                                className="h-[150px] mb-12"
+                                            />
+                                        </div>
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>

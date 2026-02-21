@@ -1,5 +1,9 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import "react-quill-new/dist/quill.snow.css";
+
+const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 import * as z from "zod";
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
@@ -99,11 +103,15 @@ export const CreateIssueForm = ({ projectId, onSuccess }: CreateIssueFormProps) 
                             <FormItem>
                                 <FormLabel>Description</FormLabel>
                                 <FormControl>
-                                    <Input
-                                        {...field}
-                                        disabled={isPending}
-                                        placeholder="Issue description..."
-                                    />
+                                    <div className="bg-background rounded-md" id="create-issue-quill">
+                                        <ReactQuill
+                                            theme="snow"
+                                            value={field.value || ""}
+                                            onChange={field.onChange}
+                                            placeholder="Issue description..."
+                                            className="h-[150px] mb-12"
+                                        />
+                                    </div>
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
