@@ -80,10 +80,10 @@ const mentionsInputStyle = {
             backgroundColor: "transparent",
             outline: "none",
             color: "hsl(var(--foreground))",
+            minHeight: "60px",
             "&focused": {
                 outline: "none",
-                ring: "2px solid hsl(var(--ring))",
-                ringOffset: "2px",
+                boxShadow: "0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring))",
                 borderColor: "transparent",
             }
         },
@@ -322,7 +322,18 @@ export const ProjectDiscussion = ({ projectId, currentUserId, isParticipant, pro
                         <MentionsInput
                             value={newContent || ""}
                             onChange={(e, newValue) => setNewContent(newValue)}
-                            style={{ ...mentionsInputStyle, input: { ...mentionsInputStyle.input, height: 80 } }}
+                            style={{
+                                ...mentionsInputStyle,
+                                "&multiLine": {
+                                    // @ts-ignore
+                                    ...mentionsInputStyle["&multiLine"],
+                                    input: {
+                                        // @ts-ignore
+                                        ...mentionsInputStyle["&multiLine"].input,
+                                        minHeight: "80px"
+                                    }
+                                }
+                            }}
                             placeholder="Start a discussion... (use @ to mention)"
                             className="text-sm"
                             disabled={isPending}
