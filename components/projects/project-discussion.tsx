@@ -61,35 +61,65 @@ const renderContentWithMentions = (text: string) => {
 const mentionsInputStyle = {
     control: {
         backgroundColor: "transparent",
-        fontSize: 14,
+        fontSize: "0.875rem",
         fontWeight: "normal",
+        color: "hsl(var(--foreground))",
     },
-    input: {
-        margin: 0,
-        padding: "8px 12px",
-        overflow: "auto",
-        height: 60,
-        border: "1px solid hsl(var(--input))",
-        borderRadius: "0.375rem",
-        outline: "none",
+    "&multiLine": {
+        control: {
+            fontFamily: "inherit",
+        },
+        highlighter: {
+            padding: "8px 12px",
+            border: "1px solid transparent",
+        },
+        input: {
+            padding: "8px 12px",
+            border: "1px solid hsl(var(--input))",
+            borderRadius: "0.375rem",
+            backgroundColor: "transparent",
+            outline: "none",
+            color: "hsl(var(--foreground))",
+            "&focused": {
+                outline: "none",
+                ring: "2px solid hsl(var(--ring))",
+                ringOffset: "2px",
+                borderColor: "transparent",
+            }
+        },
     },
     suggestions: {
         list: {
             backgroundColor: "hsl(var(--popover))",
             border: "1px solid hsl(var(--border))",
-            fontSize: 14,
+            fontSize: "0.875rem",
             borderRadius: "0.375rem",
             boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+            overflow: "hidden",
+            marginTop: "4px",
         },
         item: {
             padding: "8px 12px",
             borderBottom: "1px solid hsl(var(--border))",
+            color: "hsl(var(--popover-foreground))",
             "&focused": {
                 backgroundColor: "hsl(var(--accent))",
+                color: "hsl(var(--accent-foreground))",
             },
         },
     },
 };
+
+const renderSuggestion = (suggestion: any, search: string, highlightedDisplay: React.ReactNode) => (
+    <div className="flex items-center gap-2">
+        <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+            <span className="text-xs font-medium text-primary">
+                {suggestion.display.charAt(0).toUpperCase()}
+            </span>
+        </div>
+        <span>{highlightedDisplay}</span>
+    </div>
+);
 
 const DiscussionReply = ({
     item,
@@ -185,7 +215,8 @@ const DiscussionReply = ({
                                             markup="@[__display__](__id__)"
                                             displayTransform={(id, display) => `@${display}`}
                                             data={projectMembers.map(m => ({ id: String(m.id), display: String(m.name || m.id) }))}
-                                            style={{ backgroundColor: "var(--primary)", opacity: 0.2 }}
+                                            renderSuggestion={renderSuggestion}
+                                            style={{ backgroundColor: "var(--primary)", opacity: 0.2, borderRadius: "2px" }}
                                         />
                                     </MentionsInput>
                                 </div>
@@ -307,7 +338,8 @@ export const ProjectDiscussion = ({ projectId, currentUserId, isParticipant, pro
                                 markup="@[__display__](__id__)"
                                 displayTransform={(id, display) => `@${display}`}
                                 data={projectMembers.map(m => ({ id: String(m.id), display: String(m.name || m.id) }))}
-                                style={{ backgroundColor: "var(--primary)", opacity: 0.2 }}
+                                renderSuggestion={renderSuggestion}
+                                style={{ backgroundColor: "var(--primary)", opacity: 0.2, borderRadius: "2px" }}
                             />
                         </MentionsInput>
                         <div className="flex justify-between items-center">
