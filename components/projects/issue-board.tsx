@@ -36,9 +36,10 @@ interface IssueBoardProps {
     isProjectOwner?: boolean;
     onIssueCreate?: (issue: IssueWithAssignee & { columnName: string }) => void;
     onIssueMove?: (issueId: string, newColumnName: string) => void;
+    onIssueUpdate?: (issueId: string, updatedIssue: Partial<IssueWithAssignee>) => void;
 }
 
-export const IssueBoard = ({ projectId, columns: initialColumns, isProjectOwner, onIssueCreate, onIssueMove }: IssueBoardProps) => {
+export const IssueBoard = ({ projectId, columns: initialColumns, isProjectOwner, onIssueCreate, onIssueMove, onIssueUpdate }: IssueBoardProps) => {
     const [columns, setColumns] = useState<ColumnWithIssues[]>(
         initialColumns.map(col => ({
             ...col,
@@ -168,11 +169,17 @@ export const IssueBoard = ({ projectId, columns: initialColumns, isProjectOwner,
                                     <CreateIssueForm
                                         projectId={projectId}
                                         onSuccess={(issue) => {
+                                            // Find target column first before state updates to avoid side effects inside setState
+                                            const targetCol = columns.find(col => col.id === issue.columnId || (!issue.columnId && col.order === 0));
+
+                                            if (targetCol) {
+                                                onIssueCreate?.({ ...issue, assignee: null, columnName: targetCol.name });
+                                            }
+
                                             // Add issue to the matching column (or first column)
                                             setColumns(prev => prev.map(col => {
                                                 const isTarget = col.id === issue.columnId || (!issue.columnId && col.order === 0);
                                                 if (isTarget) {
-                                                    onIssueCreate?.({ ...issue, assignee: null, columnName: col.name });
                                                     return {
                                                         ...col,
                                                         issues: [...col.issues, { ...issue, assignee: null }],
@@ -228,6 +235,14 @@ export const IssueBoard = ({ projectId, columns: initialColumns, isProjectOwner,
                 open={detailOpen}
                 onOpenChange={setDetailOpen}
                 isProjectOwner={isProjectOwner}
+                onUpdate={(updatedIssue) => {
+                    setColumns(prev => prev.map(col => ({
+                        ...col,
+                        issues: col.issues.map(i => i.id === updatedIssue.id ? { ...i, ...updatedIssue } : i),
+                    })));
+                    setSelectedIssue(updatedIssue);
+                    onIssueUpdate?.(updatedIssue.id, updatedIssue);
+                }}
                 onDelete={(issueId) => {
                     setColumns(prev => prev.map(col => ({
                         ...col,

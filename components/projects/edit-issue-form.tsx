@@ -8,7 +8,7 @@ import * as z from "zod";
 import { useState, useTransition, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { IssueSchema } from "@/schemas";
+import { IssueUpdateSchema } from "@/schemas";
 import { Input } from "@/components/ui/input";
 import {
     Form,
@@ -28,48 +28,59 @@ import {
 import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/form-error";
 import { FormSuccess } from "@/components/form-success";
-import { createIssue } from "@/actions/issues";
+import { updateIssue } from "@/actions/issues";
 import { getUploadUrl } from "@/actions/upload";
 import { Paperclip, X } from "lucide-react";
 
 import { Issue } from "@prisma/client";
+import { format } from "date-fns";
 
-interface CreateIssueFormProps {
-    projectId: string;
+interface EditIssueFormProps {
+    issue: Issue & { attachmentUrl?: string | null, attachmentName?: string | null };
     onSuccess?: (issue: Issue) => void;
+    onCancel?: () => void;
 }
 
-export const CreateIssueForm = ({ projectId, onSuccess }: CreateIssueFormProps) => {
+export const EditIssueForm = ({ issue, onSuccess, onCancel }: EditIssueFormProps) => {
     const [error, setError] = useState<string | undefined>("");
     const [success, setSuccess] = useState<string | undefined>("");
     const [isPending, startTransition] = useTransition();
+
     const [attachment, setAttachment] = useState<File | null>(null);
+    const [existingAttachment, setExistingAttachment] = useState<{ url: string, name: string } | null>(
+        issue.attachmentUrl && issue.attachmentName
+            ? { url: issue.attachmentUrl, name: issue.attachmentName }
+            : null
+    );
+    const [removeExisting, setRemoveExisting] = useState(false);
+
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const form = useForm<z.infer<typeof IssueSchema>>({
-        resolver: zodResolver(IssueSchema),
+    const form = useForm<z.infer<typeof IssueUpdateSchema>>({
+        resolver: zodResolver(IssueUpdateSchema),
         defaultValues: {
-            title: "",
-            description: "",
-            projectId: projectId,
-            priority: "MEDIUM",
-            type: "TASK",
-            status: "TODO",
-            dueDate: "",
-            attachmentUrl: "",
-            attachmentName: "",
+            id: issue.id,
+            title: issue.title,
+            description: issue.description || "",
+            projectId: issue.projectId,
+            priority: issue.priority || "MEDIUM",
+            type: issue.type || "TASK",
+            status: issue.status || "TODO",
+            dueDate: issue.dueDate ? format(new Date(issue.dueDate), "yyyy-MM-dd") : "",
+            attachmentUrl: issue.attachmentUrl || "",
+            attachmentName: issue.attachmentName || "",
         },
     });
 
-    const onSubmit = async (values: z.infer<typeof IssueSchema>) => {
+    const onSubmit = async (values: z.infer<typeof IssueUpdateSchema>) => {
         setError("");
         setSuccess("");
 
         startTransition(async () => {
             let finalValues = { ...values };
 
+            // Handle new file upload
             if (attachment) {
-                // 1. Get presigned URL
                 const { uploadUrl, fileUrl, error: uploadError } = await getUploadUrl(
                     attachment.name,
                     attachment.type,
@@ -82,7 +93,6 @@ export const CreateIssueForm = ({ projectId, onSuccess }: CreateIssueFormProps) 
                     return;
                 }
 
-                // 2. Upload file directly to S3/Minio using PUT
                 try {
                     const uploadResponse = await fetch(uploadUrl, {
                         method: "PUT",
@@ -96,18 +106,23 @@ export const CreateIssueForm = ({ projectId, onSuccess }: CreateIssueFormProps) 
                         throw new Error("Failed to upload file to storage");
                     }
 
-                    // 3. Attach file URL to issue values
                     finalValues.attachmentUrl = fileUrl;
                     finalValues.attachmentName = attachment.name;
-
                 } catch (err: any) {
                     setError("Failed to upload attachment: " + err.message);
                     return;
                 }
+            } else if (removeExisting) {
+                // Handle removing existing file
+                finalValues.attachmentUrl = "";
+                finalValues.attachmentName = "";
+            } else if (existingAttachment) {
+                // Keep existing file
+                finalValues.attachmentUrl = existingAttachment.url;
+                finalValues.attachmentName = existingAttachment.name;
             }
 
-            // 4. Create Issue in Database
-            const data = await createIssue(finalValues);
+            const data = await updateIssue(finalValues);
 
             if (data?.error) {
                 setError(data.error);
@@ -149,7 +164,7 @@ export const CreateIssueForm = ({ projectId, onSuccess }: CreateIssueFormProps) 
                             <FormItem>
                                 <FormLabel>Description</FormLabel>
                                 <FormControl>
-                                    <div className="bg-background rounded-md" id="create-issue-quill">
+                                    <div className="bg-background rounded-md" id="edit-issue-quill">
                                         <ReactQuill
                                             theme="snow"
                                             value={field.value || ""}
@@ -247,11 +262,13 @@ export const CreateIssueForm = ({ projectId, onSuccess }: CreateIssueFormProps) 
                                 onChange={(e) => {
                                     if (e.target.files && e.target.files[0]) {
                                         setAttachment(e.target.files[0]);
+                                        setRemoveExisting(true); // Replacing existing file
                                     }
                                 }}
                                 disabled={isPending}
                             />
-                            {!attachment ? (
+
+                            {!attachment && !existingAttachment ? (
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -266,10 +283,14 @@ export const CreateIssueForm = ({ projectId, onSuccess }: CreateIssueFormProps) 
                                 <div className="flex items-center justify-between w-full p-2 border rounded-md bg-muted/50">
                                     <div className="flex items-center gap-2 overflow-hidden">
                                         <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
-                                        <span className="text-sm truncate max-w-[200px]">{attachment.name}</span>
-                                        <span className="text-xs text-muted-foreground shrink-0">
-                                            ({(attachment.size / 1024 / 1024).toFixed(2)} MB)
+                                        <span className="text-sm truncate max-w-[200px]">
+                                            {attachment ? attachment.name : existingAttachment?.name}
                                         </span>
+                                        {attachment && (
+                                            <span className="text-xs text-muted-foreground shrink-0">
+                                                ({(attachment.size / 1024 / 1024).toFixed(2)} MB)
+                                            </span>
+                                        )}
                                     </div>
                                     <Button
                                         type="button"
@@ -278,6 +299,8 @@ export const CreateIssueForm = ({ projectId, onSuccess }: CreateIssueFormProps) 
                                         className="h-8 w-8 p-0 shrink-0 text-muted-foreground hover:text-destructive"
                                         onClick={() => {
                                             setAttachment(null);
+                                            setExistingAttachment(null);
+                                            setRemoveExisting(true);
                                             if (fileInputRef.current) fileInputRef.current.value = "";
                                         }}
                                         disabled={isPending}
@@ -288,16 +311,26 @@ export const CreateIssueForm = ({ projectId, onSuccess }: CreateIssueFormProps) 
                             )}
                         </div>
                     </div>
+
                 </div>
                 <FormError message={error} />
                 <FormSuccess message={success} />
-                <Button
-                    disabled={isPending}
-                    type="submit"
-                    className="w-full"
-                >
-                    {isPending ? "Creating..." : "Create Issue"}
-                </Button>
+                <div className="flex justify-end gap-4">
+                    <Button
+                        disabled={isPending}
+                        type="button"
+                        variant="outline"
+                        onClick={onCancel}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        disabled={isPending}
+                        type="submit"
+                    >
+                        {isPending ? "Updating..." : "Update Issue"}
+                    </Button>
+                </div>
             </form>
         </Form>
     );

@@ -153,6 +153,9 @@ model Issue {
   order       Float    @default(0)
 
   dueDate     DateTime?
+
+  attachmentUrl  String? @db.Text
+  attachmentName String?
 }
 
 model Sprint {
@@ -196,6 +199,9 @@ model Discussion {
   parentId  String?
   parent    Discussion?  @relation("DiscussionReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies   Discussion[] @relation("DiscussionReplies")
+
+  attachmentUrl  String? @db.Text
+  attachmentName String?
 
   @@index([projectId])
   @@index([parentId])

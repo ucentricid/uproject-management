@@ -3,6 +3,7 @@
 import { db } from "@/lib/db";
 import { auth } from "@/auth";
 import { sendMail } from "@/lib/mail";
+import { deleteAttachmentFromS3 } from "@/actions/upload";
 
 // Check if user is project owner or member
 const isProjectParticipant = async (projectId: string, userId: string) => {
@@ -62,7 +63,7 @@ export const getDiscussions = async (projectId: string) => {
     return discussions;
 };
 
-export const createDiscussion = async (projectId: string, content: string, parentId?: string) => {
+export const createDiscussion = async (projectId: string, content: string, parentId?: string, attachmentUrl?: string, attachmentName?: string) => {
     const session = await auth();
 
     if (!session?.user?.id) {
@@ -80,6 +81,8 @@ export const createDiscussion = async (projectId: string, content: string, paren
             projectId,
             userId: session.user.id,
             parentId: parentId || null,
+            attachmentUrl: attachmentUrl || null,
+            attachmentName: attachmentName || null,
         },
         include: {
             user: {
@@ -186,10 +189,37 @@ export const deleteDiscussion = async (discussionId: string) => {
 
     const discussion = await db.discussion.findUnique({
         where: { id: discussionId },
+        include: {
+            replies: {
+                include: {
+                    replies: true
+                }
+            }
+        }
     });
 
     if (!discussion || discussion.userId !== session.user.id) {
         return { error: "You can only delete your own comments" };
+    }
+
+    // Collect all attachment URLs to delete
+    const urlsToDelete: string[] = [];
+    if (discussion.attachmentUrl) urlsToDelete.push(discussion.attachmentUrl);
+
+    if (discussion.replies) {
+        discussion.replies.forEach(reply => {
+            if (reply.attachmentUrl) urlsToDelete.push(reply.attachmentUrl);
+            if (reply.replies) {
+                reply.replies.forEach(subReply => {
+                    if (subReply.attachmentUrl) urlsToDelete.push(subReply.attachmentUrl);
+                });
+            }
+        });
+    }
+
+    // Delete files from S3
+    for (const url of urlsToDelete) {
+        await deleteAttachmentFromS3(url);
     }
 
     await db.discussion.delete({

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
-import { MessageSquare, Send, Trash2, Reply, ChevronDown, ChevronRight } from "lucide-react";
+import { useState, useTransition, useEffect, useRef } from "react";
+import { MessageSquare, Send, Trash2, Reply, ChevronDown, ChevronRight, Paperclip, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { MentionsInput, Mention } from "react-mentions";
 import { getDiscussions, createDiscussion, deleteDiscussion } from "@/actions/discussions";
+import { getDiscussionUploadUrl, getDownloadUrl } from "@/actions/upload";
 import { AlertConfirmation } from "@/components/ui/alert-confirmation";
 
 type DiscussionUser = {
@@ -24,6 +25,8 @@ type DiscussionItem = {
     user: DiscussionUser;
     parentId: string | null;
     replies: DiscussionItem[];
+    attachmentUrl?: string | null;
+    attachmentName?: string | null;
 };
 
 interface ProjectDiscussionProps {
@@ -118,7 +121,7 @@ const DiscussionReply = ({
     depth = 0,
 }: {
     item: DiscussionItem;
-    onReply: (parentId: string, content: string) => void;
+    onReply: (parentId: string, content: string, attachmentFile?: File | null) => void;
     onDelete: (id: string) => void;
     isPending: boolean;
     currentUserId: string;
@@ -128,14 +131,38 @@ const DiscussionReply = ({
     const [showReplyInput, setShowReplyInput] = useState(false);
     const [replyContent, setReplyContent] = useState("");
     const [showReplies, setShowReplies] = useState(true);
+    const [attachment, setAttachment] = useState<File | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const isOwner = item.user.id === currentUserId;
 
     const handleReply = () => {
-        if (!replyContent.trim()) return;
-        onReply(item.id, replyContent);
+        if (!replyContent.trim() && !attachment) return;
+        onReply(item.id, replyContent, attachment);
         setReplyContent("");
+        setAttachment(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
         setShowReplyInput(false);
+    };
+
+    const handleDownload = async (e: React.MouseEvent, url: string, name: string) => {
+        e.preventDefault();
+        try {
+            const result = await getDownloadUrl(url, name);
+            if (result.success && result.downloadUrl) {
+                const a = document.createElement("a");
+                a.href = result.downloadUrl;
+                a.download = name;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } else {
+                alert(result.error || "Failed to prepare download");
+            }
+        } catch (error) {
+            console.error("Error downloading attachment:", error);
+            alert("An error occurred while downloading.");
+        }
     };
 
     return (
@@ -155,6 +182,19 @@ const DiscussionReply = ({
                             </span>
                         </div>
                         <p className="text-sm mt-1.5 whitespace-pre-wrap leading-relaxed">{renderContentWithMentions(item.content)}</p>
+
+                        {item.attachmentUrl && item.attachmentName && (
+                            <div className="mt-3">
+                                <button
+                                    onClick={(e) => handleDownload(e, item.attachmentUrl!, item.attachmentName!)}
+                                    className="inline-flex items-center gap-2 p-2 border rounded-md hover:bg-muted/50 transition-colors bg-muted/20 text-left max-w-sm"
+                                >
+                                    <Paperclip className="h-4 w-4 text-blue-500 shrink-0" />
+                                    <span className="text-xs text-blue-500 hover:underline truncate">{item.attachmentName}</span>
+                                </button>
+                            </div>
+                        )}
+
                         <div className="flex items-center gap-1 mt-3">
                             {depth < 2 && (
                                 <Button
@@ -207,11 +247,52 @@ const DiscussionReply = ({
                                             style={{ backgroundColor: "var(--primary)", opacity: 0.2, borderRadius: "2px" }}
                                         />
                                     </MentionsInput>
+
+                                    <div className="flex justify-between items-center mt-2">
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="file"
+                                                className="hidden"
+                                                ref={fileInputRef}
+                                                disabled={isPending}
+                                                onChange={(e) => {
+                                                    if (e.target.files && e.target.files[0]) {
+                                                        setAttachment(e.target.files[0]);
+                                                    }
+                                                }}
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-8"
+                                                onClick={() => fileInputRef.current?.click()}
+                                                disabled={isPending}
+                                            >
+                                                <Paperclip className="h-4 w-4 mr-1" />
+                                                Attachments
+                                            </Button>
+                                            {attachment && (
+                                                <div className="flex items-center gap-2 bg-muted/50 px-2 py-1 rounded-md text-xs">
+                                                    <span className="truncate max-w-[150px]">{attachment.name}</span>
+                                                    <button
+                                                        onClick={() => {
+                                                            setAttachment(null);
+                                                            if (fileInputRef.current) fileInputRef.current.value = "";
+                                                        }}
+                                                        className="text-muted-foreground hover:text-destructive"
+                                                    >
+                                                        <X className="h-3 w-3" />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                                 <Button
                                     size="sm"
                                     onClick={handleReply}
-                                    disabled={isPending || !replyContent.trim()}
+                                    disabled={isPending || (!replyContent.trim() && !attachment)}
                                     className="shrink-0 self-end"
                                 >
                                     <Send className="h-3.5 w-3.5" />
@@ -254,21 +335,54 @@ export const ProjectDiscussion = ({ projectId, currentUserId, isParticipant, pro
     const [newContent, setNewContent] = useState("");
     const [isPending, startTransition] = useTransition();
     const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [attachment, setAttachment] = useState<File | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         getDiscussions(projectId).then(setDiscussions);
     }, [projectId]);
 
-    const handleCreate = (parentId?: string, content?: string) => {
+    const handleCreate = (parentId?: string, content?: string, attachmentFile?: File | null) => {
         const text = content || newContent;
-        if (!text.trim()) return;
+        if (!text.trim() && !attachmentFile) return;
 
-        startTransition(() => {
-            createDiscussion(projectId, text, parentId).then((result) => {
+        startTransition(async () => {
+            let finalAttachmentUrl = undefined;
+            let finalAttachmentName = undefined;
+
+            if (attachmentFile) {
+                const { uploadUrl, fileUrl, error } = await getDiscussionUploadUrl(attachmentFile.name, attachmentFile.type, projectId);
+                if (uploadUrl && fileUrl && !error) {
+                    try {
+                        const response = await fetch(uploadUrl, {
+                            method: "PUT",
+                            body: attachmentFile,
+                            headers: { "Content-Type": attachmentFile.type },
+                        });
+                        if (response.ok) {
+                            finalAttachmentUrl = fileUrl;
+                            finalAttachmentName = attachmentFile.name;
+                        } else {
+                            alert("Failed to upload file");
+                            return;
+                        }
+                    } catch (e) {
+                        alert("Error uploading file");
+                        return;
+                    }
+                } else {
+                    alert(error || "Failed to generate upload URL");
+                    return;
+                }
+            }
+
+            createDiscussion(projectId, text, parentId, finalAttachmentUrl, finalAttachmentName).then((result) => {
                 if (result.discussion) {
                     if (!parentId) {
                         setDiscussions(prev => [result.discussion as unknown as DiscussionItem, ...prev]);
                         setNewContent("");
+                        setAttachment(null);
+                        if (fileInputRef.current) fileInputRef.current.value = "";
                     } else {
                         getDiscussions(projectId).then(setDiscussions);
                     }
@@ -331,12 +445,47 @@ export const ProjectDiscussion = ({ projectId, currentUserId, isParticipant, pro
                             />
                         </MentionsInput>
                         <div className="flex justify-between items-center">
-                            <span className="text-xs text-muted-foreground">
-                                Press Ctrl+Enter to post
-                            </span>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="file"
+                                    className="hidden"
+                                    ref={fileInputRef}
+                                    disabled={isPending}
+                                    onChange={(e) => {
+                                        if (e.target.files && e.target.files[0]) {
+                                            setAttachment(e.target.files[0]);
+                                        }
+                                    }}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={isPending}
+                                >
+                                    <Paperclip className="h-4 w-4 mr-1" />
+                                    Attachments
+                                </Button>
+                                {attachment && (
+                                    <div className="flex items-center gap-2 bg-muted/50 px-2 py-1 rounded-md text-xs">
+                                        <span className="truncate max-w-[150px]">{attachment.name}</span>
+                                        <button
+                                            onClick={() => {
+                                                setAttachment(null);
+                                                if (fileInputRef.current) fileInputRef.current.value = "";
+                                            }}
+                                            className="text-muted-foreground hover:text-destructive"
+                                        >
+                                            <X className="h-3 w-3" />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                             <Button
-                                onClick={() => handleCreate()}
-                                disabled={isPending || !newContent.trim()}
+                                onClick={() => handleCreate(undefined, undefined, attachment)}
+                                disabled={isPending || (!newContent.trim() && !attachment)}
                                 size="sm"
                             >
                                 <Send className="h-4 w-4 mr-2" />

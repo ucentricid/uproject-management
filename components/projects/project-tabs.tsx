@@ -39,8 +39,8 @@ export const ProjectTabs = ({
                 <button
                     onClick={() => setActiveTab("board")}
                     className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "board"
-                            ? "border-primary text-foreground"
-                            : "border-transparent text-muted-foreground hover:text-foreground"
+                        ? "border-primary text-foreground"
+                        : "border-transparent text-muted-foreground hover:text-foreground"
                         }`}
                 >
                     <LayoutGrid className="h-3.5 w-3.5" />
@@ -49,8 +49,8 @@ export const ProjectTabs = ({
                 <button
                     onClick={() => setActiveTab("timeline")}
                     className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "timeline"
-                            ? "border-primary text-foreground"
-                            : "border-transparent text-muted-foreground hover:text-foreground"
+                        ? "border-primary text-foreground"
+                        : "border-transparent text-muted-foreground hover:text-foreground"
                         }`}
                 >
                     <GanttChartSquare className="h-3.5 w-3.5" />
@@ -70,6 +70,11 @@ export const ProjectTabs = ({
                     onIssueMove={(issueId, newColumnName) => {
                         setTimelineIssues(prev =>
                             prev.map(i => i.id === issueId ? { ...i, columnName: newColumnName } : i)
+                        );
+                    }}
+                    onIssueUpdate={(issueId, updatedIssue) => {
+                        setTimelineIssues(prev =>
+                            prev.map(i => i.id === issueId ? { ...i, ...updatedIssue } : i)
                         );
                     }}
                 />
