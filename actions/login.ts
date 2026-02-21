@@ -21,7 +21,7 @@ export const login = async (values: z.infer<typeof LoginSchema>) => {
         await signIn("credentials", {
             email,
             password,
-            redirect: false,
+            redirectTo: DEFAULT_LOGIN_REDIRECT,
         });
     } catch (error: any) {
         if (error instanceof AuthError) {
@@ -34,11 +34,8 @@ export const login = async (values: z.infer<typeof LoginSchema>) => {
             }
         }
 
-        console.error("CRITICAL SIGNIN ERROR:", error);
-        return { error: "System Error: " + (error?.message || "Unknown error") };
+        // We MUST re-throw the error if it is not an AuthError. Next.js and Auth.js 
+        // rely on throwing a "NEXT_REDIRECT" error to route to the new page.
+        throw error;
     }
-
-    // Instead of throwing a Next.js redirect from the server action (which gets caught by the client Promise .catch),
-    // we return the success state and url. The client form will handle the navigation.
-    return { success: "Logged in!", redirectTo: DEFAULT_LOGIN_REDIRECT };
 };

@@ -45,12 +45,15 @@ export const LoginForm = () => {
                     if (data?.error) {
                         form.reset();
                         setError(data.error);
-                    } else if (data?.success) {
-                        setSuccess(data.success);
-                        window.location.assign(data.redirectTo || "/dashboard");
                     }
                 })
-                .catch(() => {
+                .catch((error) => {
+                    // Next.js redirect from the server throws an error to the client to trigger navigation.
+                    // We must not catch it here, otherwise we prevent the redirect and the user sees "Something went wrong".
+                    if (error?.message === "NEXT_REDIRECT" || error?.digest?.includes("NEXT_REDIRECT")) {
+                        throw error;
+                    }
+                    console.error("Login client error:", error);
                     setError("Something went wrong");
                 });
         });
