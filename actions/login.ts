@@ -2,6 +2,7 @@
 
 import * as z from "zod";
 import { AuthError } from "next-auth";
+import { redirect } from "next/navigation";
 
 import { signIn } from "@/auth";
 import { LoginSchema } from "@/schemas";
@@ -21,7 +22,7 @@ export const login = async (values: z.infer<typeof LoginSchema>) => {
         await signIn("credentials", {
             email,
             password,
-            redirectTo: DEFAULT_LOGIN_REDIRECT,
+            redirect: false,
         });
     } catch (error: any) {
         if (error instanceof AuthError) {
@@ -34,16 +35,10 @@ export const login = async (values: z.infer<typeof LoginSchema>) => {
             }
         }
 
-        // In Next.js, redirect() throws an error. Auth.js also throws redirect errors. 
-        // We have to re-throw these type of errors so Next.js can handle the redirect response.
-        if (error instanceof Error && error.message === "NEXT_REDIRECT") {
-            throw error;
-        }
-        if (error && typeof error === 'object' && 'digest' in error && typeof error.digest === 'string' && error.digest.startsWith("NEXT_REDIRECT")) {
-            throw error;
-        }
-
         console.error("CRITICAL SIGNIN ERROR:", error);
-        return { error: "System Error: " + (error.message || "Unknown error") };
+        return { error: "System Error: " + (error?.message || "Unknown error") };
     }
+
+    // Redirect manually outside of try/catch
+    redirect(DEFAULT_LOGIN_REDIRECT);
 };

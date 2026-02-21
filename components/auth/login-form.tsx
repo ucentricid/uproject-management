@@ -47,8 +47,7 @@ export const LoginForm = () => {
                         setError(data.error);
                     }
                 })
-                .catch((err) => {
-                    console.error("Login client error:", err);
+                .catch(() => {
                     setError("Something went wrong");
                 });
         });
