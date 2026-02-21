@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { MentionsInput, Mention } from "react-mentions";
-import { Separator } from "@/components/ui/separator";
 import { getDiscussions, createDiscussion, deleteDiscussion } from "@/actions/discussions";
 import { AlertConfirmation } from "@/components/ui/alert-confirmation";
 
@@ -168,8 +167,8 @@ const DiscussionReply = ({
                             <div className="mt-3 flex gap-2">
                                 <div className="flex-1">
                                     <MentionsInput
-                                        value={replyContent}
-                                        onChange={(e) => setReplyContent(e.target.value)}
+                                        value={replyContent || ""}
+                                        onChange={(e, newValue) => setReplyContent(newValue)}
                                         style={mentionsInputStyle}
                                         placeholder="Write a reply... (use @ to mention)"
                                         className="text-sm"
@@ -183,7 +182,7 @@ const DiscussionReply = ({
                                     >
                                         <Mention
                                             trigger="@"
-                                            data={projectMembers.map(m => ({ id: m.id, display: m.name }))}
+                                            data={projectMembers.map(m => ({ id: String(m.id), display: String(m.name || m.id) }))}
                                             style={{ backgroundColor: "var(--primary)", opacity: 0.2 }}
                                         />
                                     </MentionsInput>
@@ -288,8 +287,8 @@ export const ProjectDiscussion = ({ projectId, currentUserId, isParticipant, pro
                     </div>
                     <div className="flex-1 space-y-2">
                         <MentionsInput
-                            value={newContent}
-                            onChange={(e) => setNewContent(e.target.value)}
+                            value={newContent || ""}
+                            onChange={(e, newValue) => setNewContent(newValue)}
                             style={{ ...mentionsInputStyle, input: { ...mentionsInputStyle.input, height: 80 } }}
                             placeholder="Start a discussion... (use @ to mention)"
                             className="text-sm"
@@ -303,7 +302,7 @@ export const ProjectDiscussion = ({ projectId, currentUserId, isParticipant, pro
                         >
                             <Mention
                                 trigger="@"
-                                data={projectMembers.map(m => ({ id: m.id, display: m.name }))}
+                                data={projectMembers.map(m => ({ id: String(m.id), display: String(m.name || m.id) }))}
                                 style={{ backgroundColor: "var(--primary)", opacity: 0.2 }}
                             />
                         </MentionsInput>
