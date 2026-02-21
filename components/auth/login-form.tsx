@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import * as z from "zod";
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
@@ -27,7 +26,6 @@ export const LoginForm = () => {
     const [error, setError] = useState<string | undefined>("");
     const [success, setSuccess] = useState<string | undefined>("");
     const [isPending, startTransition] = useTransition();
-    const router = useRouter();
 
     const form = useForm<z.infer<typeof LoginSchema>>({
         resolver: zodResolver(LoginSchema),
@@ -49,7 +47,7 @@ export const LoginForm = () => {
                         setError(data.error);
                     } else if (data?.success) {
                         setSuccess(data.success);
-                        router.push(data.redirectTo || "/dashboard");
+                        window.location.assign(data.redirectTo || "/dashboard");
                     }
                 })
                 .catch(() => {
