@@ -34,8 +34,12 @@ export const login = async (values: z.infer<typeof LoginSchema>) => {
             }
         }
 
-        // Check for Next.js Redirect
-        if (error?.digest?.startsWith("NEXT_REDIRECT") || error?.message === "NEXT_REDIRECT") {
+        // In Next.js, redirect() throws an error. Auth.js also throws redirect errors. 
+        // We have to re-throw these type of errors so Next.js can handle the redirect response.
+        if (error instanceof Error && error.message === "NEXT_REDIRECT") {
+            throw error;
+        }
+        if (error && typeof error === 'object' && 'digest' in error && typeof error.digest === 'string' && error.digest.startsWith("NEXT_REDIRECT")) {
             throw error;
         }
 
