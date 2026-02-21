@@ -2,7 +2,6 @@
 
 import * as z from "zod";
 import { AuthError } from "next-auth";
-import { redirect } from "next/navigation";
 
 import { signIn } from "@/auth";
 import { LoginSchema } from "@/schemas";
@@ -39,6 +38,7 @@ export const login = async (values: z.infer<typeof LoginSchema>) => {
         return { error: "System Error: " + (error?.message || "Unknown error") };
     }
 
-    // Redirect manually outside of try/catch
-    redirect(DEFAULT_LOGIN_REDIRECT);
+    // Instead of throwing a Next.js redirect from the server action (which gets caught by the client Promise .catch),
+    // we return the success state and url. The client form will handle the navigation.
+    return { success: "Logged in!", redirectTo: DEFAULT_LOGIN_REDIRECT };
 };
