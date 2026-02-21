@@ -35,6 +35,7 @@ interface EditUserDialogProps {
     user: {
         id: string;
         name: string | null;
+        email: string | null;
         role: "ADMIN" | "MEMBER" | string;
     } | null;
     open: boolean;

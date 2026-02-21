@@ -12,7 +12,7 @@ const DashboardPage = async () => {
     let activeTasks = 0;
     let completedTasks = 0;
     let totalDiscussions = 0;
-    let recentProjects = [];
+    let recentProjects: any[] = [];
 
     if (session?.user?.id) {
         const userId = session.user.id;
