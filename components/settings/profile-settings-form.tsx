@@ -63,7 +63,7 @@ export const ProfileSettingsForm = ({ initialName }: ProfileSettingsFormProps) =
     };
 
     return (
-        <Card className="w-full max-w-xl">
+        <Card className="w-full">
             <CardHeader>
                 <CardTitle>Profile</CardTitle>
                 <CardDescription>Update your personal information.</CardDescription>

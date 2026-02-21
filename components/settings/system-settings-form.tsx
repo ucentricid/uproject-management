@@ -81,9 +81,9 @@ export const SystemSettingsForm = ({
     };
 
     return (
-        <Card className="w-full max-w-xl border-orange-500/20">
-            <CardHeader className="bg-orange-500/5 rounded-t-xl pb-4">
-                <CardTitle className="text-orange-600 dark:text-orange-400">System Settings</CardTitle>
+        <Card className="w-full">
+            <CardHeader>
+                <CardTitle>System Settings</CardTitle>
                 <CardDescription>Global configuration for the application. Administrator access only.</CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
@@ -152,9 +152,9 @@ export const SystemSettingsForm = ({
                             disabled={isPending}
                             type="submit"
                             variant="default"
-                            className="bg-orange-600 hover:bg-orange-700 text-white"
+                            className="w-full"
                         >
-                            Update Site Settings
+                            Update System Settings
                         </Button>
                     </form>
                 </Form>

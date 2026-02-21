@@ -26,11 +26,11 @@ const SettingsPage = async () => {
             </p>
 
             <Tabs defaultValue="profile" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 md:w-[400px] mb-8">
-                    <TabsTrigger value="profile">Profile</TabsTrigger>
-                    <TabsTrigger value="security">Security</TabsTrigger>
+                <TabsList className="flex flex-wrap w-full md:w-auto h-auto justify-start mb-8 gap-2 bg-transparent p-0">
+                    <TabsTrigger value="profile" className="data-[state=active]:bg-muted px-4 py-2">Profile</TabsTrigger>
+                    <TabsTrigger value="security" className="data-[state=active]:bg-muted px-4 py-2">Security</TabsTrigger>
                     {session.user.role === "ADMIN" && (
-                        <TabsTrigger value="system">System</TabsTrigger>
+                        <TabsTrigger value="system" className="data-[state=active]:bg-muted px-4 py-2">System</TabsTrigger>
                     )}
                 </TabsList>
 

@@ -64,7 +64,7 @@ export const SettingsForm = () => {
     };
 
     return (
-        <Card className="w-full max-w-xl">
+        <Card className="w-full">
             <CardHeader>
                 <CardTitle>Change Password</CardTitle>
                 <CardDescription>Update the password you use to log in to the system.</CardDescription>
