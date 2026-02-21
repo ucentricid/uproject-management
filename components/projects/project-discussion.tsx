@@ -60,33 +60,19 @@ const renderContentWithMentions = (text: string) => {
 
 const mentionsInputStyle = {
     control: {
-        backgroundColor: "transparent",
         fontSize: "0.875rem",
         fontWeight: "normal",
         color: "hsl(var(--foreground))",
     },
-    "&multiLine": {
-        control: {
-            fontFamily: "inherit",
-        },
-        highlighter: {
-            padding: "8px 12px",
-            border: "1px solid transparent",
-        },
-        input: {
-            padding: "8px 12px",
-            border: "1px solid hsl(var(--input))",
-            borderRadius: "0.375rem",
-            backgroundColor: "transparent",
-            outline: "none",
-            color: "hsl(var(--foreground))",
-            minHeight: "60px",
-            "&focused": {
-                outline: "none",
-                boxShadow: "0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring))",
-                borderColor: "transparent",
-            }
-        },
+    highlighter: {
+        padding: "8px",
+    },
+    input: {
+        padding: "8px",
+        margin: 0,
+        outline: "none",
+        border: "none",
+        width: "100%",
     },
     suggestions: {
         list: {
@@ -97,6 +83,7 @@ const mentionsInputStyle = {
             boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
             overflow: "hidden",
             marginTop: "4px",
+            zIndex: 50,
         },
         item: {
             padding: "8px 12px",
@@ -201,7 +188,7 @@ const DiscussionReply = ({
                                         onChange={(e, newValue) => setReplyContent(newValue)}
                                         style={mentionsInputStyle}
                                         placeholder="Write a reply... (use @ to mention)"
-                                        className="text-sm"
+                                        className="w-full min-h-[60px] text-sm border border-input rounded-md bg-transparent focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background"
                                         disabled={isPending}
                                         onKeyDown={(e: any) => {
                                             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
@@ -322,20 +309,9 @@ export const ProjectDiscussion = ({ projectId, currentUserId, isParticipant, pro
                         <MentionsInput
                             value={newContent || ""}
                             onChange={(e, newValue) => setNewContent(newValue)}
-                            style={{
-                                ...mentionsInputStyle,
-                                "&multiLine": {
-                                    // @ts-ignore
-                                    ...mentionsInputStyle["&multiLine"],
-                                    input: {
-                                        // @ts-ignore
-                                        ...mentionsInputStyle["&multiLine"].input,
-                                        minHeight: "80px"
-                                    }
-                                }
-                            }}
+                            style={mentionsInputStyle}
                             placeholder="Start a discussion... (use @ to mention)"
-                            className="text-sm"
+                            className="w-full min-h-[80px] text-sm border border-input rounded-md bg-transparent focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background"
                             disabled={isPending}
                             onKeyDown={(e: any) => {
                                 if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
